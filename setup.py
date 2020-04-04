@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 """
-PyKrylov: Krylov Methods in Pure Python
+PyKrylov3: Krylov Methods in Pure Python
 
 PyKrylov is a library of Krylov-type iterative
 methods for linear systems implemented in pure Python.
-D. Orban <dominique.orban@gmail.com>
 """
 
 DOCLINES = __doc__.split("\n")
@@ -31,7 +30,6 @@ def configuration(parent_package='',top_path=None):
 def setup_package():
 
     from numpy.distutils.core import setup
-    from numpy.distutils.misc_util import Configuration
 
     old_path = os.getcwd()
     local_path = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -41,13 +39,13 @@ def setup_package():
 
     try:
         setup(
-            name='pykrylov',
-            maintainer="PyKrylov Developers",
-            maintainer_email="dominique.orban@gmail.com",
+            name='pykrylov3',
+            maintainer="PyKrylov3 Developers",
+            maintainer_email="andrew.b.lambe@gmail.com",
             description="Krylov Methods in Pure Python",
             long_description="\n".join(DOCLINES[2:]),
-            url="http://github.com/dpo/pykrylov/tree/master",
-            download_url="http://github.com/dpo/pykrylov/tarball/0.1.1",
+            url="http://github.com/lambe/pykrylov3/tree/master",
+            download_url="http://github.com/lambe/pykrylov3/tarball/0.1.1",
             license='LICENSE',
             classifiers=[
                 "Development Status :: 4 - Beta",

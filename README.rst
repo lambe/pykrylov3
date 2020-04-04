@@ -48,6 +48,14 @@ those of Scipy.
 Installing
 ==========
 
+For general use, pip is the easiest way to get started::
+
+    pip install pykrylov3
+
+
+Installing Development Version
+==============================
+
 Type the usual Distutils stance::
 
     python setup.py install

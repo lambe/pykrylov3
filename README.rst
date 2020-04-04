@@ -1,33 +1,26 @@
-========
-PyKrylov
-========
+=========
+PyKrylov3
+=========
 
-PyKrylov is a pure Python package implementing common Krylov methods.
+PyKrylov3 is a pure Python package implementing common Krylov methods. This project is a
+fork of the old `PyKrylov <https://github.com/PythonOptimizers/pykrylov>`_ project,
+updated for Python3 with some refactoring.
 
-.. image:: https://travis-ci.org/dpo/pykrylov.png?branch=master
-    :alt: Travis-CI badge
-    :target: https://travis-ci.org/dpo/pykrylov
-
-.. image:: https://ci.appveyor.com/api/projects/status/5fqbbvhanhwslq5w?svg=true
-    :alt: Appveyor badge
-    :target: https://ci.appveyor.com/project/dpo/pykrylov
-
-.. image:: https://coveralls.io/repos/dpo/pykrylov/badge.svg?branch=master&service=github
-    :alt: Coveralls badge
-    :target: https://coveralls.io/github/dpo/pykrylov?branch=master
-
+**UNDER CONSTRUCTION** Use at your own risk for the time being.
 
 Requirements
 ============
 
-1. `Python <http://www.python.org>`_ 2.7. I've never tested with Python 3.
-2. `NumPy <http://www.scipy.org/NumPy>`_
+1. `Python <http://www.python.org>`_ 3.5 and up.
+    * I do my development on Python 3.8; if you have issues with older
+      versions of Python, submit an issue
+2. `NumPy <http://www.scipy.org/NumPy>`_. Tested with version 1.18
+3. `SciPy <https://www.scipy.org>`_. Tested with version 1.4
 
 If you are working under Linux, OS/X or Windows, prebuilt packages are
 available. Remember that for efficiency, it is recommended to compile Numpy
-against optimized LAPACK and BLAS libraries. Under OS/X efficient
-implementations of BLAS and LAPACK are available from Xcode. Specify
-``-framework Accelerate`` when installing NumPy.
+against optimized LAPACK and BLAS libraries. OpenBLAS is a good starting
+point in most cases.
 
 
 Krylov Methods
@@ -44,13 +37,12 @@ only matrix-vector products with A are required at each iteration. Some methods
 require matrix-vector products with the transpose of A when the latter is not
 symmetric. For more information on Krylov methods, see the references below.
 
-PyKrylov does not rely on any particular dense or sparse matrix package because
+PyKrylov3 does not rely on any particular dense or sparse matrix package because
 all matrix-vector products are handled as operators, i.e., the user supplies
 a function to perform such products. Similarly, preconditioners are handled as
 operators and are not held explicitly. As a result, PyKrylov should be easy to
 use with dense Numpy array or matrices and with sparse matrix packages such as
-those of `Pysparse <http://pysparse.sf.net>`_ and `Scipy
-<http://www.scipy.org>`_.
+those of Scipy.
 
 
 Installing
@@ -101,9 +93,3 @@ References
   J. Dongarra, V. Eijkhout, R. Pozo, C. Romine and
   H. Van der Vorst, *Templates for the Solution of Linear Systems:
   Building Blocks for Iterative Methods*, SIAM, Philadelphia, 1993.
-
-
-.. image:: https://d2weczhvl823v0.cloudfront.net/dpo/pykrylov/trend.png
-   :alt: Bitdeli badge
-   :target: https://bitdeli.com/free
-

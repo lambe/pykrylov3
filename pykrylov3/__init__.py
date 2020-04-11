@@ -1,4 +1,4 @@
-"PyKrylov: Krylov Methods Library in Python"
+"""PyKrylov: Krylov Methods Library in Python"""
 
 __docformat__ = 'restructuredtext'
 

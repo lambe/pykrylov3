@@ -5,17 +5,18 @@ PyKrylov3: Krylov Methods in Pure Python
 PyKrylov is a library of Krylov-type iterative
 methods for linear systems implemented in pure Python.
 """
-
-DOCLINES = __doc__.split("\n")
-
 import os
 import sys
 
+DOCLINES = __doc__.split("\n")
+
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
 # update it when the contents of directories change.
-if os.path.exists('MANIFEST'): os.remove('MANIFEST')
+if os.path.exists('MANIFEST'):
+    os.remove('MANIFEST')
 
-def configuration(parent_package='',top_path=None):
+
+def configuration(parent_package='', top_path=None):
     from numpy.distutils.misc_util import Configuration
     config = Configuration(None, parent_package, top_path)
     config.set_options(ignore_setup_xxx_py=True,
@@ -23,9 +24,10 @@ def configuration(parent_package='',top_path=None):
                        delegate_options_to_subpackages=True,
                        quiet=True)
 
-    config.add_subpackage('pykrylov')
-    config.get_version(os.path.join('pykrylov','version.py'))
+    config.add_subpackage('pykrylov3')
+    config.get_version(os.path.join('pykrylov3', 'version.py'))
     return config
+
 
 def setup_package():
 
@@ -34,8 +36,8 @@ def setup_package():
     old_path = os.getcwd()
     local_path = os.path.dirname(os.path.abspath(sys.argv[0]))
     os.chdir(local_path)
-    sys.path.insert(0,local_path)
-    sys.path.insert(0,os.path.join(local_path,'pykrylov')) # to retrieve version
+    sys.path.insert(0, local_path)
+    sys.path.insert(0, os.path.join(local_path, 'pykrylov3'))  # to retrieve version
 
     try:
         setup(
@@ -67,6 +69,7 @@ def setup_package():
         os.chdir(old_path)
 
     return
+
 
 if __name__ == '__main__':
     setup_package()

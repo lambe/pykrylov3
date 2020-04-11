@@ -2,10 +2,10 @@
 import sys
 
 import numpy as np
+from scipy.sparse.linalg import LinearOperator
 from math import sqrt, sin, pi
 
 from pykrylov3.gallery import Poisson1dMatvec, Poisson2dMatvec
-from pykrylov3.linop import LinearOperator
 from pykrylov3.cg import CG
 from pykrylov3.tools import machine_epsilon
 
@@ -33,9 +33,7 @@ class TestPoisson1dCase:
             cond = lmbd_max/lmbd_min
             tol = cond * self.eps
 
-            A = LinearOperator(n, n,
-                               lambda x: Poisson1dMatvec(x),
-                               symmetric=True)
+            A = LinearOperator((n, n), Poisson1dMatvec)
             e = np.ones(n)
             rhs = A * e
             cg = CG(A, matvec_max=2*n, outputStream=sys.stderr)
@@ -70,9 +68,7 @@ class TestPoisson2dCase:
             tol = cond * self.eps
 
             n2 = n*n
-            A = LinearOperator(n2, n2,
-                               lambda x: Poisson2dMatvec(x),
-                               symmetric=True)
+            A = LinearOperator((n2, n2), Poisson2dMatvec)
             e = np.ones(n2)
             rhs = A * e
             cg = CG(A, matvec_max=2*n2, outputStream=sys.stderr)

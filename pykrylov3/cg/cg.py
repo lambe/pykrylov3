@@ -1,7 +1,7 @@
 
 import numpy as np
 
-from pykrylov3.tools.utils import check_symmetric
+from pykrylov3.tools import check_symmetric
 from pykrylov3.generic import KrylovMethod
 
 __docformat__ = 'restructuredtext'

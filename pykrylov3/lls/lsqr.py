@@ -563,12 +563,12 @@ if __name__ == '__main__':
     #  [ 2  1 ] [x] = [2]
     #  [ 1 -3 ] [y]   [0]
 
-    from pykrylov.linop import LinearOperator
+    from scipy.sparse.linalg import LinearOperator
     import numpy as np
 
-    A = LinearOperator(1, 1, matvec=lambda u: u / 2, symmetric=True)
-    C = LinearOperator(1, 1, matvec=lambda v: v / 3, symmetric=True)
-    B = LinearOperator(1, 1, matvec=lambda x: x.copy(), symmetric=True)
+    A = LinearOperator((1, 1), lambda u: u / 2)
+    C = LinearOperator((1, 1), lambda v: v / 3)
+    B = LinearOperator((1, 1), lambda x: x.copy())
     rhs = np.array([2.0])
     lsqr = LSQRFramework(B)
     lsqr.solve(rhs, M=A, N=C, damp=1.0, show=True)

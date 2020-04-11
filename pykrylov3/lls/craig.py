@@ -542,12 +542,12 @@ if __name__ == '__main__':
     # Solution: x = 6/7 = 0.857142857143
     #           y = 2/7 = 0.285714285714
 
-    from pykrylov.linop import LinearOperator
+    from scipy.sparse.linalg import LinearOperator
     import numpy as np
 
-    A = LinearOperator(1, 1, matvec=lambda u: u/2, symmetric=True)
-    C = LinearOperator(1, 1, matvec=lambda v: v/3, symmetric=True)
-    B = LinearOperator(1, 1, matvec=lambda x: x.copy(), symmetric=True)
+    A = LinearOperator((1, 1), lambda u: u/2)
+    C = LinearOperator((1, 1), lambda v: v/3)
+    B = LinearOperator((1, 1), lambda x: x.copy())
     rhs = np.array([2.0])
     craig = CRAIGFramework(B)
     craig.solve(rhs, M=A, N=C, show=True)

@@ -72,14 +72,14 @@ def check_symmetric(op, repeats=10):
         return False
     eps = machine_epsilon()
     np.random.seed(1)
-    for _ in xrange(repeats):
+    for _ in range(repeats):
         x = np.random.random(n)
         w = op * x
         r = op * w
         s = np.dot(w, w)
         t = np.dot(x, r)
         z = abs(s - t)
-        epsa = (s + eps) * eps**(1.0/3)
+        epsa = (s + eps) * eps**(1/3)
         if z > epsa:
             return False
     return True
@@ -95,7 +95,7 @@ def check_positive_definite(op, repeats=10, semi=False):
     m, n = op.shape
     if m != n:
         return False
-    for _ in xrange(repeats):
+    for _ in range(repeats):
         v = np.random.random(n)
         w = op * v
         vw = np.dot(v, w)
@@ -114,4 +114,4 @@ def check_positive_definite(op, repeats=10, semi=False):
 
 # if __name__ == '__main__':
 #     roots = roots_quadratic(2.0e+20, .1, -4)
-#     print 'Received: ', roots
+#     print('Received: ', roots)

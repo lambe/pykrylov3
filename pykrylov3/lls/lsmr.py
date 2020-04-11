@@ -19,11 +19,10 @@ Dept of MS&E, Stanford University.
 
 __docformat__ = 'restructuredtext'
 
-from pykrylov.generic import KrylovMethod
+from pykrylov3.generic import KrylovMethod
 
 from numpy import zeros, dot
 from numpy.linalg import norm
-from math import sqrt
 
 class LSMRFramework(KrylovMethod):
 
@@ -194,16 +193,16 @@ class LSMRFramework(KrylovMethod):
         if itnlim is None: itnlim = minDim
 
         if show:
-            print ' '
-            print 'LSMR            Least-squares solution of  Ax = b'
+            print(' ')
+            print('LSMR            Least-squares solution of  Ax = b')
             str1 = 'The matrix A has %8g rows  and %8g cols' % (m, n)
             str2 = 'damp = %20.14e' % (damp)
             str3 = 'atol = %8.2e                 conlim = %8.2e'%( atol, conlim)
             str4 = 'btol = %8.2e               itnlim = %8g'  %( btol, itnlim)
-            print str1
-            print str2
-            print str3
-            print str4
+            print(str1)
+            print(str2)
+            print(str3)
+            print(str4)
 
         # Initialize the Golub-Kahan bidiagonalization process.
 
@@ -212,7 +211,7 @@ class LSMRFramework(KrylovMethod):
             u = M(Mu)
         else:
             u = Mu
-        beta = sqrt(dot(u,Mu))  # norm(u)
+        beta = (dot(u,Mu))**0.5  # norm(u)
 
         v = zeros(n)
         alpha = 0
@@ -226,7 +225,7 @@ class LSMRFramework(KrylovMethod):
                 v = N(Nv)
             else:
                 v = Nv
-            alpha = sqrt(dot(v,Nv))  # norm(v)
+            alpha = (dot(v,Nv))**0.5  # norm(v)
 
         if alpha > 0:
             v /= alpha
@@ -264,7 +263,7 @@ class LSMRFramework(KrylovMethod):
         normA2  = alpha*alpha
         maxrbar = 0
         minrbar = 1e+100
-        normA   = sqrt(normA2)
+        normA   = (normA2)**0.5
         condA   = 1
         normx   = 0
         xNrgNorm2 = 0  # norm(x)^2 in the appropriate energy norm.
@@ -283,17 +282,17 @@ class LSMRFramework(KrylovMethod):
         normar = alpha * beta
         if normar == 0:
             if show:
-                print msg[0]
+                print(msg[0])
             return x, istop, itn, normr, normar, normA, condA, normx
 
         if show:
-            print ' '
-            print hdg1, hdg2
+            print(' ')
+            print(hdg1, hdg2)
             test1  = 1;             test2  = alpha / beta
             str1   = '%6g %12.5e'    %(    itn,   x[0] )
             str2   = ' %10.3e %10.3e'%(  normr, normar )
             str3   = '  %8.1e %8.1e' %(  test1,  test2 )
-            print ''.join([str1, str2, str3])
+            print(''.join([str1, str2, str3]))
 
         if store_resids:
             self.resids.append(normr)
@@ -313,7 +312,7 @@ class LSMRFramework(KrylovMethod):
                 u = M(Mu)
             else:
                 u = Mu
-            beta = sqrt(dot(u,Mu))  # norm(u)
+            beta = (dot(u,Mu))**0.5  # norm(u)
 
             if beta > 0:
                 u /= beta
@@ -325,7 +324,7 @@ class LSMRFramework(KrylovMethod):
                 else:
                     v = Nv
 
-                alpha  = sqrt(dot(v,Nv))  # norm(v)
+                alpha  = (dot(v,Nv))**0.5  # norm(v)
 
                 if alpha > 0:
                     v /= alpha
@@ -367,7 +366,7 @@ class LSMRFramework(KrylovMethod):
             dErr[itn % window] = zeta
             if itn > window:
                 trncDirErr = norm(dErr)
-                xNrgNorm = sqrt(xNrgNorm2)
+                xNrgNorm = (xNrgNorm2)**0.5
                 self.dir_errors_window.append(trncDirErr / xNrgNorm)
                 if trncDirErr < etol * xNrgNorm:
                     istop = 8
@@ -397,11 +396,11 @@ class LSMRFramework(KrylovMethod):
             tautildeold   = (zetaold - thetatildeold*tautildeold)/rhotildeold
             taud          = (zeta - thetatilde*tautildeold)/rhodold
             d             = d + betacheck*betacheck
-            normr         = sqrt(d + (betad - taud)**2 + betadd*betadd)
+            normr         = (d + (betad - taud)**2 + betadd*betadd)**0.5
 
             # Estimate ||A||.
             normA2        = normA2 + beta*beta
-            normA         = sqrt(normA2)
+            normA         = (normA2)**0.5
             normA2        = normA2 + alpha*alpha
 
             # Estimate cond(A).
@@ -463,37 +462,38 @@ class LSMRFramework(KrylovMethod):
                 if prnt:
                     if pcount >= pfreq:
                         pcount = 0
-                        print ' '
-                        print hdg1, hdg2
+                        print(' ')
+                        print(hdg1, hdg2)
                     pcount = pcount + 1
                     str1   = '%6g %12.5e'    %(    itn,   x[0] )
                     str2   = ' %10.3e %10.3e'%(  normr, normar )
                     str3   = '  %8.1e %8.1e' %(  test1,  test2 )
                     str4   = ' %8.1e %8.1e'  %(  normA,  condA )
-                    print ''.join([str1, str2, str3, str4])
+                    print(''.join([str1, str2, str3, str4]))
 
             if istop > 0: break
 
         # Print the stopping condition.
 
         if show:
-            print ' '
-            print 'LSMR finished'
-            print msg[istop]
+            print(' ')
+            print('LSMR finished')
+            print(msg[istop])
             str1    = 'istop =%8g    normr =%8.1e'      %( istop, normr )
             str2    = '    normA =%8.1e    normAr =%8.1e' %( normA, normar)
             str3    = 'itn   =%8g    condA =%8.1e'      %( itn  , condA )
             str4    = '    normx =%8.1e'                %( normx)
-            print str1, str2
-            print str3, str4
-            print 'Estimated energy norm of x: %7.1e' % sqrt(xNrgNorm2)
+            print(str1, str2)
+            print(str3, str4)
+            print('Estimated energy norm of x: %7.1e' % (xNrgNorm2)**0.5)
 
         self.x = x
         return x, istop, itn, normr, normar, normA, condA, normx
 
 
 def sign(a):
-    if a < 0: return -1
+    if a < 0:
+        return -1
     return 1
 
 
@@ -504,16 +504,18 @@ def symOrtho(a,b):
       and Least-Squares Problems", Dissertation,
       http://www.stanford.edu/group/SOL/dissertations/sou-cheng-choi-thesis.pdf
     """
-    if b==0: return sign(a), 0, abs(a)
-    elif a==0: return 0, sign(b), abs(b)
+    if b==0:
+        return sign(a), 0, abs(a)
+    elif a==0:
+        return 0, sign(b), abs(b)
     elif abs(b)>abs(a):
         tau = a / b
-        s = sign(b) / sqrt(1+tau*tau)
+        s = sign(b) / (1+tau*tau)**0.5
         c = s * tau
         r = b / s
     else:
         tau = b / a
-        c = sign(a) / sqrt(1+tau*tau)
+        c = sign(a) / (1+tau*tau)**0.5
         s = c * tau
         r = a / c
     return c, s, r

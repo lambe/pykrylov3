@@ -8,12 +8,11 @@ Michael P. Friedlander, University of British Columbia
 Dominique Orban, Ecole Polytechnique de Montreal
 """
 
-from pykrylov.generic import KrylovMethod
-from pykrylov.tools import roots_quadratic
+from pykrylov3.generic import KrylovMethod
+from pykrylov3.tools import roots_quadratic
 
 from numpy import zeros, dot, inf
 from numpy.linalg import norm
-from math import sqrt
 
 __docformat__ = 'restructuredtext'
 
@@ -21,12 +20,12 @@ __docformat__ = 'restructuredtext'
 # Simple shortcuts---linalg.norm is too slow for small vectors
 def normof2(x, y):
     """Euclidian norm of a 2-element vector."""
-    return sqrt(x * x + y * y)
+    return (x * x + y * y)**0.5
 
 
 def normof4(x1, x2, x3, x4):
     """Euclidian norm of a 4-element vector."""
-    return sqrt(x1 * x1 + x2 * x2 + x3 * x3 + x4 * x4)
+    return (x1 * x1 + x2 * x2 + x3 * x3 + x4 * x4)**0.5
 
 
 class LSQRFramework(KrylovMethod):
@@ -209,17 +208,17 @@ class LSQRFramework(KrylovMethod):
             stepMax = None
 
         if show:
-            print ' '
-            print 'LSQR            Least-squares solution of  Ax = b'
+            print(' ')
+            print('LSQR            Least-squares solution of  Ax = b')
             str1 = 'The matrix A has %8d rows and %8d cols' % (m, n)
             str2 = 'damp = %20.14e     wantvar = %-5s' % (damp, repr(wantvar))
             str3 = 'atol = %8.2e                 conlim = %8.2e' % (atol,
                                                                     conlim)
             str4 = 'btol = %8.2e                 itnlim = %8g' % (btol, itnlim)
-            print str1
-            print str2
-            print str3
-            print str4
+            print(str1)
+            print(str2)
+            print(str3)
+            print(str4)
 
         # Set up the first vectors u and v for the bidiagonalization.
         # These satisfy  beta*M*u = b,  alpha*N*v = A'u.
@@ -239,7 +238,7 @@ class LSQRFramework(KrylovMethod):
             u = Mu
 
         alpha = 0.
-        beta = sqrt(dot(u, Mu))       # norm(u)
+        beta = (dot(u, Mu))**0.5       # norm(u)
         if beta > 0:
             u /= beta
             if M is not None:
@@ -250,7 +249,7 @@ class LSQRFramework(KrylovMethod):
                 v = N(Nv)
             else:
                 v = Nv
-            alpha = sqrt(dot(v, Nv))   # norm(v)
+            alpha = (dot(v, Nv))**0.5   # norm(v)
 
         if alpha > 0:
             v /= alpha
@@ -262,7 +261,7 @@ class LSQRFramework(KrylovMethod):
         Arnorm = alpha * beta
         if Arnorm == 0.0:
             if show:
-                print self.msg[0]
+                print(self.msg[0])
             x_is_zero = True
             istop = 0
 
@@ -276,14 +275,14 @@ class LSQRFramework(KrylovMethod):
         head2 = ' Compatible   LS      Norm A   Cond A'
 
         if show:
-            print ' '
-            print head1 + head2
+            print(' ')
+            print(head1 + head2)
             test1 = 1.0
             test2 = alpha / beta if not x_is_zero else 1.0
             str1 = '%6g %12.5e' % (itn, x[0])
             str2 = ' %10.3e %10.3e' % (r1norm, r2norm)
             str3 = '  %8.1e %8.1e' % (test1, test2)
-            print str1 + str2 + str3
+            print(str1 + str2 + str3)
 
         if store_resids:
             self.resids.append(r2norm)
@@ -306,7 +305,7 @@ class LSQRFramework(KrylovMethod):
                 u = M(Mu)
             else:
                 u = Mu
-            beta = sqrt(dot(u, Mu))   # norm(u)
+            beta = (dot(u, Mu))**0.5   # norm(u)
             if beta > 0:
                 u /= beta
                 if M is not None:
@@ -319,7 +318,7 @@ class LSQRFramework(KrylovMethod):
                     v = N(Nv)
                 else:
                     v = Nv
-                alpha = sqrt(dot(v, Nv))  # norm(v)
+                alpha = (dot(v, Nv))**0.5  # norm(v)
                 if alpha > 0:
                     v /= alpha
                     if N is not None:
@@ -391,7 +390,7 @@ class LSQRFramework(KrylovMethod):
                 dErr[itn % window] = phi
                 if itn > window:
                     trncDirErr = norm(dErr)
-                    xNrgNorm = sqrt(xNrgNorm2)
+                    xNrgNorm = (xNrgNorm2)**0.5
                     self.dir_errors_window.append(trncDirErr / xNrgNorm)
                     if trncDirErr < etol * xNrgNorm:
                         istop = 8
@@ -403,7 +402,7 @@ class LSQRFramework(KrylovMethod):
                 gambar = - cs2 * rho
                 rhs = phi - delta * z
                 zbar = rhs / gambar
-                xnorm = sqrt(xxnorm + zbar**2)
+                xnorm = (xxnorm + zbar**2)**0.5
                 gamma = normof2(gambar, theta)
                 cs2 = gambar / gamma
                 sn2 = theta / gamma
@@ -414,10 +413,10 @@ class LSQRFramework(KrylovMethod):
                 # First, estimate the condition of the matrix  Abar,
                 # and the norms of  rbar  and  Abar'rbar.
 
-                Acond = Anorm * sqrt(ddnorm)
+                Acond = Anorm * (ddnorm)**0.5
                 res1 = phibar**2
                 res2 = res2 + psi**2
-                rnorm = sqrt(res1 + res2)
+                rnorm = (res1 + res2)**0.5
                 Arnorm = alpha * abs(tau)
 
                 # 07 Aug 2002:
@@ -430,7 +429,7 @@ class LSQRFramework(KrylovMethod):
                 # Although there is cancellation, it might be accurate enough.
 
                 r1sq = rnorm**2 - dampsq * xxnorm
-                r1norm = sqrt(abs(r1sq))
+                r1norm = (abs(r1sq))**0.5
                 if r1sq < 0:
                     r1norm = - r1norm
                 r2norm = rnorm
@@ -503,7 +502,7 @@ class LSQRFramework(KrylovMethod):
                     str2 = ' %10.3e %10.3e' % (r1norm, r2norm)
                     str3 = '  %8.1e %8.1e' % (test1, test2)
                     str4 = ' %8.1e %8.1e' % (Anorm, Acond)
-                    print str1 + str2 + str3 + str4
+                    print(str1 + str2 + str3 + str4)
 
             if istop > 0:
                 break
@@ -512,10 +511,10 @@ class LSQRFramework(KrylovMethod):
             # Print the stopping condition.
 
         if show:
-            print ' '
-            print 'LSQR finished'
-            print self.msg[istop]
-            print ' '
+            print(' ')
+            print('LSQR finished')
+            print(self.msg[istop])
+            print(' ')
             str1 = 'istop =%8g   r1norm =%8.1e' % (istop, r1norm)
             str2 = 'Anorm =%8.1e   Arnorm =%8.1e' % (Anorm, Arnorm)
             str3 = 'itn   =%8g   r2norm =%8.1e' % (itn, r2norm)
@@ -523,11 +522,11 @@ class LSQRFramework(KrylovMethod):
             str5 = '                  bnorm  =%8.1e' % bnorm
             str6 = 'xNrgNorm2 = %7.1e   trnDirErr = %7.1e' % \
                    (xNrgNorm2, trncDirErr)
-            print str1 + '   ' + str2
-            print str3 + '   ' + str4
-            print str5
-            print str6
-            print ' '
+            print(str1 + '   ' + str2)
+            print(str3 + '   ' + str4)
+            print(str5)
+            print(str6)
+            print(' ')
 
         if istop == 0:
             self.status = 'solution is zero'
@@ -573,4 +572,4 @@ if __name__ == '__main__':
     rhs = np.array([2.0])
     lsqr = LSQRFramework(B)
     lsqr.solve(rhs, M=A, N=C, damp=1.0, show=True)
-    print 'Solution: ', lsqr.x
+    print('Solution: ', lsqr.x)

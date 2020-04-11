@@ -4,7 +4,7 @@
 Linear operators to represent limited-memory SR1 matrices and their inverses.
 L-SR1 matrices may not be positive-definite.
 """
-from pykrylov.linop import LQNLinearOperator, StructuredLQNLinearOperator
+from pykrylov3.linop import LQNLinearOperator, StructuredLQNLinearOperator
 
 import numpy as np
 from numpy.linalg import norm
@@ -91,11 +91,11 @@ class LSR1Operator(LQNLinearOperator):
                 self.gamma = ys[last] / np.dot(y[:, last], y[:, last])
                 q /= self.gamma
 
-        for i in xrange(npairs):
+        for i in range(npairs):
             k = (self.insert + i) % npairs
             if ys[k] is not None:
                 a[:, k] = y[:, k] - s[:, k] / self.gamma
-                for j in xrange(i):
+                for j in range(i):
                     l = (self.insert + j) % npairs
                     if ys[l] is not None:
                         a[:, k] -= np.dot(a[:, l], s[:, k]) / aTs[l] * a[:, l]

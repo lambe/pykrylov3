@@ -1,4 +1,4 @@
-from math import sqrt
+"""Useful matvec functions."""
 
 def Poisson1dMatvec(x):
     # Matrix-vector product with a 1D Poisson matrix
@@ -7,9 +7,10 @@ def Poisson1dMatvec(x):
     y[1:] -= x[:-1]
     return y
 
+
 def Poisson2dMatvec(x):
     # Matrix-vector product with a 2D Poisson matrix
-    n = int(sqrt(x.shape[0]))
+    n = int((x.shape[0])**0.5)
     # Contribution of main diagonal and off-diagonal blocks
     y = 4*x
     y[n:] -= x[:-n]
@@ -18,7 +19,7 @@ def Poisson2dMatvec(x):
     y[:n-1] -= x[1:n]
     y[1:n] -= x[:n-1]
     # Contribution of intermediate diagonal blocks
-    for i in xrange(1,n-1):
+    for i in range(1, n-1):
         xi = x[i*n:(i+1)*n]   # This a view of x, not a copy
         yi = y[i*n:(i+1)*n]
         yi[:-1] -= xi[1:]

@@ -1,4 +1,4 @@
-from pykrylov.tools.types import *
+from pykrylov3.tools.types import *
 import numpy as np
 import logging
 
@@ -258,7 +258,7 @@ class LinearOperator(BaseLinearOperator):
         n, m = self.shape
         H = np.empty((n, m), dtype=self.dtype)
         e = np.zeros(m, dtype=self.dtype)
-        for j in xrange(m):
+        for j in range(m):
             e[j] = 1
             H[:, j] = self * e
             e[j] = 0
@@ -654,7 +654,7 @@ def CoordLinearOperator(vals, rows, cols,
 
       result_type = np.result_type(x.dtype, vals.dtype)
       y = np.zeros(nargout, dtype=result_type)
-      for k in xrange(len(vals)):
+      for k in range(len(vals)):
         row = rows[k]
         col = cols[k]
         val = vals[k]
@@ -776,45 +776,45 @@ if __name__ == '__main__':
     J = sp(matrix=nlp.jac(nlp.x0))
     e1 = np.ones(J.shape[0])
     e2 = np.ones(J.shape[1])
-    print 'J.shape = ', J.getShape()
+    print('J.shape = ', J.getShape())
 
-    print 'Testing PysparseLinearOperator:'
+    print('Testing PysparseLinearOperator:')
     op = PysparseLinearOperator(J)
-    print 'op.shape = ', op.shape
-    print 'op.T.shape = ', op.T.shape
-    print 'op * e2 = ', op * e2
-    print "op.T * e1 = ", op.T * e1
-    print 'op.T.T * e2 = ', op.T.T * e2
-    print 'op.T.T.T * e1 = ', op.T.T.T * e1
-    print 'With call:'
-    print 'op(e2) = ', op(e2)
-    print 'op.T(e1) = ', op.T(e1)
-    print 'op.T.T is op : ', (op.T.T is op)
-    print
-    print 'Testing LinearOperator:'
+    print('op.shape = ', op.shape)
+    print('op.T.shape = ', op.T.shape)
+    print('op * e2 = ', op * e2)
+    print("op.T * e1 = ", op.T * e1)
+    print('op.T.T * e2 = ', op.T.T * e2)
+    print('op.T.T.T * e1 = ', op.T.T.T * e1)
+    print('With call:')
+    print('op(e2) = ', op(e2))
+    print('op.T(e1) = ', op.T(e1))
+    print('op.T.T is op : ', (op.T.T is op))
+    print()
+    print('Testing LinearOperator:')
     op = LinearOperator(J.shape[1], J.shape[0],
                         lambda v: J*v,
                         matvec_transp=lambda u: u*J)
-    print 'op.shape = ', op.shape
-    print 'op.T.shape = ', op.T.shape
-    print 'op * e2 = ', op * e2
-    print 'e1.shape = ', e1.shape
-    print 'op.T * e1 = ', op.T * e1
-    print 'op.T.T * e2 = ', op.T.T * e2
-    print 'op(e2) = ', op(e2)
-    print 'op.T(e1) = ', op.T(e1)
-    print 'op.T.T is op : ', (op.T.T is op)
-    print
+    print('op.shape = ', op.shape)
+    print('op.T.shape = ', op.T.shape)
+    print('op * e2 = ', op * e2)
+    print('e1.shape = ', e1.shape)
+    print('op.T * e1 = ', op.T * e1)
+    print('op.T.T * e2 = ', op.T.T * e2)
+    print('op(e2) = ', op(e2))
+    print('op.T(e1) = ', op.T(e1))
+    print('op.T.T is op : ', (op.T.T is op))
+    print()
     op2 = op.T * op
-    print 'op2 * e2 = ', op2 * e2
-    print 'op.T * (op * e2) = ', op.T * (op * e2)
-    print 'op2 is symmetric: ', check_symmetric(op2)
+    print('op2 * e2 = ', op2 * e2)
+    print('op.T * (op * e2) = ', op.T * (op * e2))
+    print('op2 is symmetric: ', check_symmetric(op2))
     op3 = op * op.T
-    print 'op3 * e1 = ', op3 * e1
-    print 'op * (op.T * e1) = ', op * (op.T * e1)
-    print 'op3 is symmetric: ', check_symmetric(op3)
-    print
-    print 'Testing negative operator:'
+    print('op3 * e1 = ', op3 * e1)
+    print('op * (op.T * e1) = ', op * (op.T * e1))
+    print('op3 is symmetric: ', check_symmetric(op3))
+    print()
+    print('Testing negative operator:')
     nop = -op
-    print op * e2
-    print nop * e2
+    print(op * e2)
+    print(nop * e2)

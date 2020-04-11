@@ -2,7 +2,7 @@ __docformat__ = 'restructuredtext'
 
 import numpy as np
 
-from pykrylov.generic import KrylovMethod
+from pykrylov3.generic import KrylovMethod
 
 class TFQMR( KrylovMethod ):
     """

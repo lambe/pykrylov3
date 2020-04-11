@@ -5,7 +5,7 @@ Linear operators to represent limited-memory quasi-Newton matrices
 or their inverses.
 """
 
-from pykrylov.linop import LinearOperator
+from pykrylov3.linop import LinearOperator
 import numpy as np
 
 __docformat__ = 'restructuredtext'

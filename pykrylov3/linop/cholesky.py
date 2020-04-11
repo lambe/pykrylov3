@@ -7,7 +7,7 @@ try:
 except:
     raise ImportError("Please install scikits.sparse")
 
-from pykrylov.linop import LinearOperator
+from pykrylov3.linop import LinearOperator
 
 __docformat__ = 'restructuredtext'
 

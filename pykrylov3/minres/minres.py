@@ -13,11 +13,11 @@ available at http://www.stanford.edu/group/SOL/software/minres.htm.
 .. moduleauthor:: D. Orban <dominique.orban@gerad.ca>
 """
 
-from pykrylov.generic import KrylovMethod
+from pykrylov3.generic import KrylovMethod
 import numpy as np
 from numpy.linalg import norm
 from numpy import zeros, dot, empty, sqrt
-from pykrylov.tools.utils import check_symmetric, machine_epsilon
+from pykrylov3.tools.utils import check_symmetric, machine_epsilon
 
 
 class Minres(KrylovMethod):
@@ -145,10 +145,10 @@ class Minres(KrylovMethod):
         eps = self.eps
 
         if show:
-            print self.first + 'Solution of symmetric Ax = b'
-            print 'n      =  %3d     precon =  %4s           shift  =  %23.14e'\
-                % (n, (precon != None), shift)
-            print 'itnlim =  %3d     rtol   =  %11.2e\n' % (itnlim, rtol)
+            print(self.first + 'Solution of symmetric Ax = b')
+            print('n      =  %3d     precon =  %4s           shift  =  %23.14e'\
+                % (n, (precon != None), shift))
+            print('itnlim =  %3d     rtol   =  %11.2e\n' % (itnlim, rtol))
 
         istop = 0;   itn = 0;     Anorm = 0.0;    Acond = 0.0;
         rnorm = 0.0; ynorm = 0.0; done  = False;
@@ -208,10 +208,10 @@ class Minres(KrylovMethod):
         r2 = r1.copy()
 
         if show:
-            print ' '*2
+            print(' '*2)
             head1 = '   Itn     x[0]     Compatible    LS'
             head2 = '       norm(A)  cond(A) gbar/|A|'   ###### Check gbar
-            print head1 + head2
+            print(head1 + head2)
 
         # ---------------------------------------------------------------------
         # Main iteration loop.
@@ -272,7 +272,7 @@ class Minres(KrylovMethod):
                 gbar   = sn * dbar  -  cs * alfa  # gbar 1 = alfa1     gbar k
 
                 # Note: There is severe cancellation in the computation of gbar
-                #print ' sn = %21.15e\n dbar = %21.15e\n cs = %21.15e\n alfa = %21.15e\n sn*dbar-cs*alfa = %21.15e\n gbar =%21.15e' % (sn, dbar, cs, alfa, sn*dbar-cs*alfa, gbar)
+                #print(' sn = %21.15e\n dbar = %21.15e\n cs = %21.15e\n alfa = %21.15e\n sn*dbar-cs*alfa = %21.15e\n gbar =%21.15e' % (sn, dbar, cs, alfa, sn*dbar-cs*alfa, gbar))
 
                 epsln  =               sn * beta  # epsln2 = 0         epslnk+1
                 dbar   =            -  cs * beta  # dbar 2 = beta2     dbar k+1
@@ -376,21 +376,23 @@ class Minres(KrylovMethod):
                     str1 = '%6g %12.5e %10.3e' % (itn, x[0], test1)
                     str2 = ' %10.3e' % test2
                     str3 = ' %8.1e %8.1e %8.1e' % (Anorm, Acond, gbar/Anorm)
-                    print str1 + str2 + str3
+                    print(str1 + str2 + str3)
 
-                if istop > 0: break
+                if istop > 0:
+                    break
 
-                if (itn % 10)==0: print ' '
+                if (itn % 10) == 0:
+                    print(' ')
 
         # Display final status.
 
         if show:
             last = self.last
-            print last+' istop   =  %3g               itn   =%5g' % (istop,itn)
-            print last+' Anorm   =  %12.4e      Acond =  %12.4e' %(Anorm,Acond)
-            print last+' rnorm   =  %12.4e      ynorm =  %12.4e' % (rnorm,ynorm)
-            print last+' Arnorm  =  %12.4e' % Arnorm
-            print last+self.msg[istop+1]
+            print(last+' istop   =  %3g               itn   =%5g' % (istop,itn))
+            print(last+' Anorm   =  %12.4e      Acond =  %12.4e' %(Anorm,Acond))
+            print(last+' rnorm   =  %12.4e      ynorm =  %12.4e' % (rnorm,ynorm))
+            print(last+' Arnorm  =  %12.4e' % Arnorm)
+            print(last+self.msg[istop+1])
 
         self.converged = istop in [1,2,3,4,10]
         if istop == 10: self.status = 'direct error small'

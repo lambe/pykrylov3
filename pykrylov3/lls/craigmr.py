@@ -3,11 +3,10 @@ __docformat__ = 'restructuredtext'
 # TODO:
 #  []  Compute least-squares objective
 
-from pykrylov.generic import KrylovMethod
+from pykrylov3.generic import KrylovMethod
 
 from numpy import zeros, dot
 from numpy.linalg import norm
-from math import sqrt
 
 
 class CRAIGMRFramework(KrylovMethod):
@@ -35,11 +34,16 @@ class CRAIGMRFramework(KrylovMethod):
 
     def init_data(self):
 
-        self.x = None ; self.var = None
-        self.itn = 0; self.istop = 0
-        self.Anorm = 0.; self.Acond = 0. ; self.Arnorm = 0.
-        self.xnorm = 0.;
-        self.r1norm = 0.; self.r2norm = 0.
+        self.x = None
+        self.var = None
+        self.itn = 0
+        self.istop = 0
+        self.Anorm = 0.
+        self.Acond = 0.
+        self.Arnorm = 0.
+        self.xnorm = 0.
+        self.r1norm = 0.
+        self.r2norm = 0.
         self.optimal = False
         self.resids = []             # Least-squares objective function values.
         self.normal_eqns_resids = [] # Residuals of normal equations.
@@ -68,7 +72,8 @@ class CRAIGMRFramework(KrylovMethod):
         # stores the num of singular values
         minDim = min([m, n])
 
-        if itnlim is None: itnlim = minDim
+        if itnlim is None:
+            itnlim = minDim
 
         # Initialize the Golub-Kahan bidiagonalization process.
 
@@ -77,21 +82,22 @@ class CRAIGMRFramework(KrylovMethod):
             u = M(Mu)
         else:
             u = Mu
-        beta = sqrt(dot(u,Mu))  # norm(u)
+        beta = (dot(u,Mu))**0.5  # norm(u)
 
         v = zeros(n)
         alpha = 0
 
         if beta > 0:
             u /= beta
-            if M is not None: Mu /= beta
+            if M is not None:
+                Mu /= beta
 
             Nv = A.T * u
             if N is not None:
                 v = N(Nv)
             else:
                 v = Nv
-            alpha = sqrt(dot(v,Nv))  # norm(v)
+            alpha = (dot(v,Nv))**0.5  # norm(v)
 
         if alpha > 0:
             v /= alpha
@@ -101,7 +107,7 @@ class CRAIGMRFramework(KrylovMethod):
 
         itn       = 0
         delta     = 1.
-        alpha_hat = sqrt(alpha**2 + 1)
+        alpha_hat = (alpha**2 + 1)**0.5
         c         = alpha / alpha_hat
         s         = 1.    / alpha_hat
         zeta_hat  = beta
@@ -138,11 +144,12 @@ class CRAIGMRFramework(KrylovMethod):
                 u = M(Mu)
             else:
                 u = Mu
-            beta = sqrt(dot(u,Mu))  # norm(u)
+            beta = (dot(u,Mu))**0.5  # norm(u)
 
             if beta > 0:
                 u /= beta
-                if M is not None: Mu /= beta
+                if M is not None:
+                    Mu /= beta
 
                 Nv = A.T * u - beta * Nv
                 if N is not None:
@@ -150,7 +157,7 @@ class CRAIGMRFramework(KrylovMethod):
                 else:
                     v = Nv
 
-                alpha  = sqrt(dot(v,Nv))  # norm(v)
+                alpha  = (dot(v,Nv))**0.5  # norm(v)
 
                 if alpha > 0:
                     v /= alpha
@@ -163,17 +170,17 @@ class CRAIGMRFramework(KrylovMethod):
             gamma    = s * beta
 
             # Compute rotation of type II.
-            delta    = sqrt(gamma**2 + 1)
+            delta    = (gamma**2 + 1)**0.5
             c_bar    = -1. / delta
             s_bar    = gamma / delta
 
             # Compute new rotation of type I.
-            alpha_hat = sqrt(alpha**2 + delta**2)
+            alpha_hat = (alpha**2 + delta**2)**0.5
             c         = alpha / alpha_hat
             s         = delta / alpha_hat
 
             # Compute rotation of type III.
-            rho   = sqrt(alpha_tilde**2 + beta_hat**2)
+            rho   = (alpha_tilde**2 + beta_hat**2)**0.5
             c_hat = alpha_tilde / rho
             s_hat = beta_hat    / rho
 
@@ -187,7 +194,7 @@ class CRAIGMRFramework(KrylovMethod):
             zeta     = c_hat * zeta_hat
             zeta_hat = s_hat * zeta_hat
             xNrgNorm2 += zeta * zeta
-            print itn, xNrgNorm2
+            print(itn, xNrgNorm2)
             d = (u - beta_hat * d) / alpha_hat
             x += zeta * dbar
 
@@ -202,7 +209,7 @@ class CRAIGMRFramework(KrylovMethod):
             dErr[itn % window] = zeta
             if itn > window:
                 trncDirErr = norm(dErr)
-                xNrgNorm = sqrt(xNrgNorm2)
+                xNrgNorm = (xNrgNorm2)**0.5
                 self.dir_errors_window.append(trncDirErr / xNrgNorm)
                 if trncDirErr < etol * xNrgNorm:
                     istop = 8
@@ -212,13 +219,13 @@ class CRAIGMRFramework(KrylovMethod):
             if istop > 0: break
 
         if show:
-            print ' '
-            print 'CRAIG-MR finished'
-            print self.msg[istop]
-            print ' '
-            #str1 = 'istop =%8g   r1norm =%8.1e'   % (istop, sqrt(r1norm))
+            print(' ')
+            print('CRAIG-MR finished')
+            print(self.msg[istop])
+            print(' ')
+            #str1 = 'istop =%8g   r1norm =%8.1e'   % (istop, (r1norm)**0.5)
             #str2 = 'Anorm =%8.1e   Arnorm =%8.1e' % (Anorm, Arnorm)
-            #str3 = 'itn   =%8g   r2norm =%8.1e'   % ( itn, sqrt(r2norm))
+            #str3 = 'itn   =%8g   r2norm =%8.1e'   % ( itn, (r2norm)**0.5)
             #str4 = 'Acond =%8.1e   xnorm  =%8.1e' % (Acond, xnorm )
             #str5 = '                  bnorm  =%8.1e'    % bnorm
             str6 = 'xNrgNorm2 = %7.1e   trnDirErr = %7.1e' % \
@@ -226,8 +233,8 @@ class CRAIGMRFramework(KrylovMethod):
             #print str1 #+ '   ' + str2
             #print str3 #+ '   ' + str4
             #print str5
-            print str6
-            print ' '
+            print(str6)
+            print(' ')
 
         if istop == 0: self.status = 'solution is zero'
         if istop in [1,2,4,5]: self.status = 'residual small'
@@ -239,8 +246,8 @@ class CRAIGMRFramework(KrylovMethod):
         self.istop = istop
         self.itn = itn
         self.nMatvec = 2*itn
-        #self.r1norm = sqrt(r1norm)
-        #self.r2norm = sqrt(r2norm)
+        #self.r1norm = (r1norm)**0.5
+        #self.r2norm = (r2norm)**0.5
         #self.residNorm = r2norm
         #self.Anorm = Anorm
         #self.Acond = Acond

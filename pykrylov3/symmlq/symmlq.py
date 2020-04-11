@@ -11,8 +11,8 @@ __docformat__ = 'restructuredtext'
 
 import numpy as np
 
-from pykrylov.generic import KrylovMethod
-from pykrylov.tools   import machine_epsilon
+from pykrylov3.generic import KrylovMethod
+from pykrylov3.tools   import machine_epsilon
 
 class Symmlq(KrylovMethod) :
     """

@@ -1,5 +1,5 @@
 """Bi-Conjugate-Gradient Stabilized"""
 
-from bicgstab import *
+from pykrylov3.bicgstab.bicgstab import *
 
 __all__ = filter(lambda s:not s.startswith('_'), dir())

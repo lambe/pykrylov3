@@ -2,13 +2,13 @@
 
 __docformat__ = 'restructuredtext'
 
-from version import version as __version__
+from pykrylov3.version import version as __version__
 
 # Imports
 
 
-__all__ = filter(lambda s: not s.startswith('_'), dir())
-__all__ += '__version__'
+__all__ = list(filter(lambda s: not s.startswith('_'), dir()))
+__all__.append('__version__')
 
 __doc__ += """
 

@@ -1,14 +1,14 @@
 """Linear Operator Type"""
 
-from linop import *
-from blkop import *
+from pykrylov3.linop.linop import *
+from pykrylov3.linop.blkop import *
 try:
-    from cholesky import *
+    from pykrylov3.linop.cholesky import *
 except Exception:
     pass
-from lqn import *
-from lbfgs import *
-from lsr1 import *
-from ldfp import *
+from pykrylov3.linop.lqn import *
+from pykrylov3.linop.lbfgs import *
+from pykrylov3.linop.lsr1 import *
+from pykrylov3.linop.ldfp import *
 
 __all__ = filter(lambda s:not s.startswith('_'), dir())

@@ -1,12 +1,13 @@
 
-__docformat__ = 'restructuredtext'
-
 import numpy as np
 
-from pykrylov.tools.utils import check_symmetric
-from pykrylov.generic import KrylovMethod
+from pykrylov3.tools.utils import check_symmetric
+from pykrylov3.generic import KrylovMethod
 
-class CG( KrylovMethod ):
+__docformat__ = 'restructuredtext'
+
+
+class CG(KrylovMethod):
     """
     A pure Python implementation of the conjugate gradient (CG) algorithm. The
     conjugate gradient algorithm may be used to solve symmetric positive
@@ -41,7 +42,6 @@ class CG( KrylovMethod ):
 
         # Direction of nonconvexity if A is not positive definite
         self.infiniteDescent = None
-
 
     def solve(self, rhs, **kwargs):
         """
@@ -96,7 +96,7 @@ class CG( KrylovMethod ):
         if store_resids:
             self.resids.append(y.copy())
 
-        ry = np.dot(r,y)
+        ry = np.dot(r, y)
         self.residNorm0 = residNorm = np.abs(np.sqrt(ry))
         self.residHistory.append(self.residNorm0)
         threshold = max(self.abstol, self.reltol * self.residNorm0)
@@ -111,8 +111,7 @@ class CG( KrylovMethod ):
         self.logger.info(info)
 
         while residNorm > threshold and nMatvec < matvec_max and definite:
-
-            Ap  = self.op * p
+            Ap = self.op * p
             nMatvec += 1
             pAp = np.dot(p, Ap)
 
@@ -143,7 +142,7 @@ class CG( KrylovMethod ):
                 self.resids.append(y.copy())
 
             # Update preconditioned residual norm
-            ry_next = np.dot(r,y)
+            ry_next = np.dot(r, y)
 
             # Update search direction
             beta = ry_next/ry
@@ -156,7 +155,6 @@ class CG( KrylovMethod ):
 
             info = '%6d  %7.1e  %8.1e' % (nMatvec, residNorm, np.real(pAp))
             self.logger.info(info)
-
 
         self.converged = residNorm <= threshold
         self.definite = definite

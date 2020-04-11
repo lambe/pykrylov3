@@ -1,5 +1,5 @@
 """Minimum Residual Algorithm"""
 
-from minres import *
+from pykrylov3.minres.minres import *
 
 __all__ = filter(lambda s:not s.startswith('_'), dir())

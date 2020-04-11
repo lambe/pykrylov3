@@ -1,29 +1,27 @@
 # Test case for CG with a diagonally dominant matrix
-
-import unittest
 import sys
 
 import numpy as np
 from math import sqrt, sin, pi
 
-from pykrylov.gallery import Poisson1dMatvec, Poisson2dMatvec
-from pykrylov.linop import LinearOperator
-from pykrylov.cg import CG
-from pykrylov.tools import machine_epsilon
+from pykrylov3.gallery import Poisson1dMatvec, Poisson2dMatvec
+from pykrylov3.linop import LinearOperator
+from pykrylov3.cg import CG
+from pykrylov3.tools import machine_epsilon
 
 
-class Poisson1dTestCase(unittest.TestCase):
+class TestPoisson1dCase:
 
-    def setUp(self):
+    def setup(self):
         self.n = [10, 20, 100, 1000, 5000, 10000]
         self.eps = machine_epsilon()
         self.fmt = '%6d  %7d  %8.2e  %8.2e\n'
         hdrfmt = '%6s  %7s  %8s  %8s\n'
         hdr = hdrfmt % ('Size', 'Matvec', 'Resid', 'Error')
-        sys.stderr.write('\n  Poisson1D tests\n')
-        sys.stderr.write(hdr + '-' * len(hdr) + '\n')
+        print('\n  Poisson1D tests\n')
+        print(hdr + '-' * len(hdr) + '\n')
 
-    def tearDown(self):
+    def teardown(self):
         return
 
     def testPoisson1D(self):
@@ -43,22 +41,22 @@ class Poisson1dTestCase(unittest.TestCase):
             cg = CG(A, matvec_max=2*n, outputStream=sys.stderr)
             cg.solve(rhs)
             err = np.linalg.norm(e-cg.bestSolution)/sqrt(n)
-            sys.stderr.write(self.fmt % (n, cg.nMatvec, cg.residNorm, err))
-            self.assertTrue(np.allclose(e, cg.bestSolution, rtol=tol))
+            print(self.fmt % (n, cg.nMatvec, cg.residNorm, err))
+            assert np.allclose(e, cg.bestSolution, rtol=tol) == True
 
 
-class Poisson2dTestCase(unittest.TestCase):
+class TestPoisson2dCase:
 
-    def setUp(self):
+    def setup(self):
         self.n = [10, 20, 100, 500]
         self.eps = machine_epsilon()
         self.fmt = '%6d  %7d  %8.2e  %8.2e\n'
         hdrfmt = '%6s  %7s  %8s  %8s\n'
         hdr = hdrfmt % ('Size', 'Matvec', 'Resid', 'Error')
-        sys.stderr.write('\n  Poisson2D tests\n')
-        sys.stderr.write(hdr + '-' * len(hdr) + '\n')
+        print('\n  Poisson2D tests\n')
+        print(hdr + '-' * len(hdr) + '\n')
 
-    def tearDown(self):
+    def teardown(self):
         return
 
     def testPoisson2D(self):
@@ -80,11 +78,7 @@ class Poisson2dTestCase(unittest.TestCase):
             cg = CG(A, matvec_max=2*n2, outputStream=sys.stderr)
             cg.solve(rhs)
             err = np.linalg.norm(e-cg.bestSolution)/n
-            sys.stderr.write(self.fmt % (n2, cg.nMatvec, cg.residNorm, err))
+            print(self.fmt % (n2, cg.nMatvec, cg.residNorm, err))
 
             # Adjust tol because allclose() uses infinity norm
-            self.assertTrue(np.allclose(e, cg.bestSolution, rtol=err*n))
-
-
-if __name__ == '__main__':
-    unittest.main()
+            assert np.allclose(e, cg.bestSolution, rtol=err*n) == True

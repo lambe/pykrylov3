@@ -5,10 +5,17 @@ Linear operators to represent limited-memory quasi-Newton matrices
 or their inverses.
 """
 
-from pykrylov3.linop import LinearOperator
-import numpy as np
+import logging
+from numpy import float
+from scipy.linalg.blas import ddot
+from scipy.sparse.linalg import LinearOperator
 
 __docformat__ = 'restructuredtext'
+
+# Default (null) logger.
+null_log = logging.getLogger('lqn')
+null_log.setLevel(logging.INFO)
+null_log.addHandler(logging.NullHandler())
 
 
 class LQNLinearOperator(LinearOperator):
@@ -25,37 +32,41 @@ class LQNLinearOperator(LinearOperator):
             :scaling: enable scaling of the 'initial matrix' (default: False).
         """
         # Mandatory arguments
-        self.n = n
+        self._n = n
         self._npairs = npairs
 
         # Optional arguments
         self.scaling = kwargs.pop('scaling', False)
 
-        # insert to points to the location where the *next* {s, y} pair
-        # is to be inserted in self.s and self.y.
-        self.insert = 0
-
         # Threshold on dot product s'y to accept a new pair {s, y}.
         self.accept_threshold = 1.0e-20
 
         # Storage of the (s,y) pairs
-        self.s = np.empty((self.n, self.npairs), 'd')
-        self.y = np.empty((self.n, self.npairs), 'd')
-
-        self.alpha = np.empty(self.npairs, 'd')    # multipliers
-        self.ys = [None] * self.npairs             # dot products si'yi
+        # Use a list structure where the newest vector is appended
+        # to the end and the oldest is popped from the front on
+        # calling the store() function
+        self.s = list()     # np.empty((self.n, self.npairs), 'd')
+        self.y = list()     # np.empty((self.n, self.npairs), 'd')
+        self.ys = list()    # dot products si'yi
         self.gamma = 1.0
 
         # Keep track of number of matrix-vector products.
         self.n_matvec = 0
 
-        super(LQNLinearOperator, self).__init__(n, n,
-                                                matvec=self.qn_matvec,
-                                                symmetric=True, **kwargs)
+        # Assume dtype is standard double for now
+        super().__init__(float, (n, n))
+
+        self.logger = kwargs.get('logger', null_log)
+        self.logger.info('New linear operator with shape ' + str(self.shape))
+
+    @property
+    def n(self):
+        """The dimension of the (square) operator."""
+        return self._n
 
     @property
     def npairs(self):
-        """Return the maximum number of {s,y} pairs stored."""
+        """The maximum number of {s,y} pairs stored."""
         return self._npairs
 
     def _storing_test(self, new_s, new_y, ys):
@@ -69,31 +80,36 @@ class LQNLinearOperator(LinearOperator):
         oldest pair is then discarded in case the storage limit has been
         reached.
         """
-        ys = np.dot(new_s, new_y)
+        ys = ddot(new_s, new_y)
 
         if not self._storing_test(new_s, new_y, ys):
             self.logger.debug('Rejecting {s,y} pair')
             return
 
-        insert = self.insert
-        self.s[:, insert] = new_s.copy()
-        self.y[:, insert] = new_y.copy()
-        self.ys[insert] = ys
-        self.insert += 1
-        self.insert = self.insert % self.npairs
+        self.s.append(new_s)
+        self.y.append(new_y)
+        self.ys.append(ys)
+
+        if len(self.s) > self._npairs:
+            _ = self.s.pop(0)
+            _ = self.y.pop(0)
+            _ = self.ys.pop(0)
+
         return
 
     def restart(self):
         """Restart the approximation by clearing all data on past updates."""
-        self.ys = [None] * self.npairs
-        self.s = np.empty((self.n, self.npairs), 'd')
-        self.y = np.empty((self.n, self.npairs), 'd')
-        self.insert = 0
+        self.ys = list()
+        self.s = list()
+        self.y = list()
         return
 
     def qn_matvec(self, v):
         """Compute matrix-vector product."""
         raise NotImplementedError("Must be subclassed.")
+
+    def _matvec(self, x):
+        return self.qn_matvec(x)
 
 
 class StructuredLQNLinearOperator(LQNLinearOperator):
@@ -121,8 +137,8 @@ class StructuredLQNLinearOperator(LQNLinearOperator):
         :keywords:
             :scaling: enable scaling of the 'initial matrix' (default: False).
         """
-        super(StructuredLQNLinearOperator, self).__init__(n, npairs, **kwargs)
-        self.yd = np.empty((self.n, self.npairs))
+        super().__init__(n, npairs, **kwargs)
+        self.yd = list()    # np.empty((self.n, self.npairs))
 
     def store(self, new_s, new_y, new_yd):
         """Store the new pair {new_s, new_y, new_yd}.
@@ -131,17 +147,30 @@ class StructuredLQNLinearOperator(LQNLinearOperator):
         oldest pair is then discarded in case the storage limit has been
         reached.
         """
-        ys = np.dot(new_s, new_y)
+        ys = ddot(new_s, new_y)
 
         if not self._storing_test(new_s, new_y, new_yd, ys):
-            self.logger.debug('Rejecting {s, y, yd} pair')
+            self.logger.debug('Rejecting {s, y, yd} set')
             return
 
-        insert = self.insert
-        self.s[:, insert] = new_s.copy()
-        self.y[:, insert] = new_y.copy()
-        self.yd[:, insert] = new_yd.copy()
-        self.ys[insert] = ys
-        self.insert += 1
-        self.insert = self.insert % self.npairs
+        self.s.append(new_s)
+        self.y.append(new_y)
+        self.yd.append(new_yd)
+        self.ys.append(ys)
+
+        if len(self.s) > self._npairs:
+            _ = self.s.pop(0)
+            _ = self.y.pop(0)
+            _ = self.yd.pop(0)
+            _ = self.ys.pop(0)
+
         return
+
+    def restart(self):
+        super().restart()
+        self.yd = list()
+        return
+
+    def _storing_test(self, new_s, new_y, new_yd, ys):
+        """Test if new set {s, y, yd} is to be stored."""
+        raise NotImplementedError("Must be subclassed.")

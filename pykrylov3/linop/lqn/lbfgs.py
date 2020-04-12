@@ -4,8 +4,9 @@
 Linear operators to represent limited-memory BFGS matrices and their inverses.
 """
 
-from pykrylov3.linop import LQNLinearOperator, StructuredLQNLinearOperator
+from pykrylov3.linop.lqn.lqn import LQNLinearOperator, StructuredLQNLinearOperator
 import numpy as np
+from scipy.linalg.blas import ddot
 
 __docformat__ = 'restructuredtext'
 
@@ -34,7 +35,7 @@ class InverseLBFGSOperator(LQNLinearOperator):
                          Nocedal; the scaling factor is sᵀy/yᵀy
                          (default: False).
         """
-        super(InverseLBFGSOperator, self).__init__(n, npairs, **kwargs)
+        super().__init__(n, npairs, **kwargs)
 
     def _storing_test(self, new_s, new_y, ys):
         u"""Test if new pair {s, y} is to be stored.
@@ -57,25 +58,21 @@ class InverseLBFGSOperator(LQNLinearOperator):
         s = self.s
         y = self.y
         ys = self.ys
-        alpha = self.alpha
-        for i in range(self.npairs):
-            k = (self.insert - 1 - i) % self.npairs
-            if ys[k] is not None:
-                alpha[k] = np.dot(s[:, k], q) / ys[k]
-                q -= alpha[k] * y[:, k]
+
+        alpha = [0.0] * len(s)
+        for k in range(len(s) - 1, -1, -1):
+            alpha[k] = ddot(s[k], q) / ys[k]
+            q -= alpha[k] * y[k]
 
         r = q
-        if self.scaling:
-            last = (self.insert - 1) % self.npairs
-            if ys[last] is not None:
-                self.gamma = ys[last] / np.dot(y[:, last], y[:, last])
-                r *= self.gamma
+        if self.scaling and len(ys) > 0:
+            self.gamma = ys[-1] / ddot(y[-1], y[-1])
+            r *= self.gamma
 
-        for i in range(self.npairs):
-            k = (self.insert + i) % self.npairs
-            if ys[k] is not None:
-                beta = np.dot(y[:, k], r) / ys[k]
-                r += (alpha[k] - beta) * s[:, k]
+        for k in range(len(s)):
+            beta = ddot(y[k], r) / ys[k]
+            r += (alpha[k] - beta) * s[k]
+
         return r
 
 
@@ -103,7 +100,7 @@ class LBFGSOperator(InverseLBFGSOperator):
                          Nocedal; the scaling factor is sᵀy/yᵀy
                          (default: False).
         """
-        super(LBFGSOperator, self).__init__(n, npairs, **kwargs)
+        super().__init__(n, npairs, **kwargs)
 
     def qn_matvec(self, v):
         """Compute matrix-vector product with forward L-BFGS approximation.
@@ -120,24 +117,19 @@ class LBFGSOperator(InverseLBFGSOperator):
         s = self.s
         y = self.y
         ys = self.ys
-        b = np.zeros((self.n, self.npairs))
-        a = np.zeros((self.n, self.npairs))
+        b = [0.0] * len(s)
+        a = [0.0] * len(s)
 
         # B = Σ aa' - bb'.
-        for i in range(self.npairs):
-            k = (self.insert + i) % self.npairs
-            if ys[k] is not None:
-                b[:, k] = y[:, k] / ys[k]**.5
-                bv = np.dot(b[:, k], v[:])
-                q += bv * b[:, k]
-                a[:, k] = s[:, k].copy()
-                for j in range(i):
-                    l = (self.insert + j) % self.npairs
-                    if ys[l] is not None:
-                        a[:, k] += np.dot(b[:, l], s[:, k]) * b[:, l]
-                        a[:, k] -= np.dot(a[:, l], s[:, k]) * a[:, l]
-                a[:, k] /= np.dot(s[:, k], a[:, k])**.5
-                q -= np.dot(np.outer(a[:, k], a[:, k]), v[:])
+        for k in range(len(s)):
+            b[k] = y[k] / ys[k]**0.5
+            q += ddot(b[k], v) * b[k]
+            a[k] = s[k].copy()
+            for j in range(k):
+                a[k] += ddot(b[j], s[k]) * b[j]
+                a[k] -= ddot(a[j], s[k]) * a[j]
+            a[k] /= ddot(s[k], a[k])**0.5
+            q -= ddot(a[k], v) * a[k]
 
         return q
 
@@ -167,7 +159,7 @@ class CompactLBFGSOperator(InverseLBFGSOperator):
                          Nocedal; the scaling factor is sᵀy/yᵀy
                          (default: False).
         """
-        super(CompactLBFGSOperator, self).__init__(n, npairs, **kwargs)
+        super().__init__(n, npairs, **kwargs)
 
     def qn_matvec(self, v):
         """Compute matrix-vector product with forward L-BFGS approximation.
@@ -186,60 +178,34 @@ class CompactLBFGSOperator(InverseLBFGSOperator):
         s = self.s
         y = self.y
         ys = self.ys
-        prodn = 2 * self.npairs
+        paircount = len(s)
+        prodn = 2 * paircount
         a = np.zeros(prodn)
         minimat = np.zeros([prodn, prodn])
 
-        if self.scaling:
-            last = (self.insert - 1) % self.npairs
-            if ys[last] is not None:
-                self.gamma = ys[last] / np.dot(y[:, last], y[:, last])
-                r /= self.gamma
-
-        paircount = 0
-        for i in range(self.npairs):
-            k = (self.insert + i) % self.npairs
-            if ys[k] is not None:
-                a[paircount] = np.dot(r[:], s[:, k])
-                paircount += 1
-
-        j = 0
-        for i in range(self.npairs):
-            k = (self.insert + i) % self.npairs
-            if ys[k] is not None:
-                a[paircount + j] = np.dot(q[:], y[:, k])
-                j += 1
-
-        # Populate small matrix to be inverted
-        k_ind = 0
-        for i in range(self.npairs):
-            k = (self.insert + i) % self.npairs
-            if ys[k] is not None:
-                minimat[paircount + k_ind, paircount + k_ind] = -ys[k]
-                minimat[k_ind, k_ind] = np.dot(s[:, k], s[:, k]) / self.gamma
-                l_ind = 0
-                for j in range(i):
-                    l = (self.insert + j) % self.npairs
-                    if ys[l] is not None:
-                        minimat[k_ind, paircount + l_ind] = np.dot(s[:, k],
-                                                                   y[:, l])
-                        minimat[paircount + l_ind, k_ind] = minimat[k_ind,
-                                                                    (paircount +
-                                                                     l_ind)]
-                        minimat[k_ind, l_ind] = np.dot(s[:, k],
-                                                       s[:, l]) / self.gamma
-                        minimat[l_ind, k_ind] = minimat[k_ind, l_ind]
-                        l_ind += 1
-                k_ind += 1
-
-        if paircount > 0:
-            rng = 2 * paircount
-            b = np.linalg.solve(minimat[0:rng, 0:rng], a[0:rng])
+        if self.scaling and len(ys) > 0:
+            self.gamma = ys[-1] / ddot(y[-1], y[-1])
+            r *= self.gamma
 
         for i in range(paircount):
-            k = (self.insert - paircount + i) % self.npairs
-            r -= (b[i] / self.gamma) * s[:, k]
-            r -= b[i + paircount] * y[:, k]
+            a[i] = ddot(r, s[i])
+            a[paircount + i] = ddot(q, y[i])
+
+        if paircount > 0:
+            for i in range(paircount):
+                minimat[paircount + i, paircount + i] = -ys[i]
+                minimat[i, i] = ddot(s[i], s[i]) / self.gamma
+                for j in range(i):
+                    minimat[i, paircount + j] = ddot(s[i], y[j])
+                    minimat[paircount + j, i] = minimat[i, paircount + j]
+                    minimat[i, j] = ddot(s[i], s[j]) / self.gamma
+                    minimat[j, i] = minimat[i, j]
+
+            b = np.linalg.solve(minimat, a)
+
+            for i in range(paircount):
+                r -= (b[i] / self.gamma) * s[i]
+                r -= b[paircount + i] * y[i]
 
         return r
 
@@ -263,7 +229,7 @@ class StructuredLBFGSOperator(StructuredLQNLinearOperator):
                          Nocedal; the scaling factor is sᵀy/yᵀy
                          (default: False).
         """
-        super(StructuredLBFGSOperator, self).__init__(n, npairs, **kwargs)
+        super().__init__(n, npairs, **kwargs)
         self.accept_threshold = 1e-10
 
     def _storing_test(self, new_s, new_y, new_yd, ys):
@@ -274,9 +240,9 @@ class StructuredLBFGSOperator(StructuredLQNLinearOperator):
             ∣yᵀs + √(yᵀs sᵀBs)∣ ⩾ self.accept_threshold
         """
         Bs = self.qn_matvec(new_s)
-        sBs = np.dot(new_s, Bs)
+        sBs = ddot(new_s, Bs)
 
-        # Supress python runtime warnings
+        # Suppress python runtime warnings
         if ys < 0.0 or sBs < 0.0:
             return False
 
@@ -299,45 +265,40 @@ class StructuredLBFGSOperator(StructuredLQNLinearOperator):
         y = self.y
         yd = self.yd
         ys = self.ys
-        npairs = self.npairs
-        a = np.zeros([self.n, npairs])
-        ad = np.zeros([self.n, npairs])
+        paircount = len(s)
+        a = [0.0] * paircount
+        ad = [0.0] * paircount
 
-        aTs = np.zeros([npairs, 1])
-        adTs = np.zeros([npairs, 1])
+        aTs = [0.0] * paircount
+        adTs = [0.0] * paircount
 
-        if self.scaling:
-            last = (self.insert - 1) % npairs
-            if ys[last] is not None:
-                self.gamma = ys[last] / np.dot(y[:, last], y[:, last])
-                q /= self.gamma
+        if self.scaling and paircount > 0:
+            self.gamma = ys[-1] / ddot(y[-1], y[-1])
+            q /= self.gamma
 
-        for i in range(npairs):
-            k = (self.insert + i) % npairs
-            if ys[k] is not None:
-                # Form a[] and ad[] vectors for current step
-                ad[:, k] = yd[:, k] - s[:, k] / self.gamma
-                Bsk = s[:, k] / self.gamma
-                for j in range(i):
-                    l = (self.insert + j) % npairs
-                    if ys[l] is not None:
-                        aTsk = np.dot(a[:, l], s[:, k])
-                        adTsk = np.dot(ad[:, l], s[:, k])
-                        aTsl = np.dot(a[:, l], s[:, l])
-                        adTsl = np.dot(ad[:, l], s[:, l])
-                        update = (aTsk / aTsl) * ad[:, l] + (adTsk / aTsl) * a[:, l] - \
-                            (aTsk * adTsl / aTsl**2) * a[:, l]
-                        Bsk += update.copy()
-                        ad[:, k] -= update.copy()
-                a[:, k] = y[:, k] + (ys[k] / np.dot(s[:, k], Bsk))**0.5 * Bsk
+        for i in range(paircount):
+            # Form a and ad vectors for current step
+            ad[i] = yd[i] - s[i] / self.gamma
+            Bs_i = s[i] / self.gamma
+            for j in range(i):
+                aTs_i = ddot(a[j], s[i])
+                adTs_i = ddot(ad[j], s[i])
+                aTs_j = ddot(a[j], s[j])
+                adTs_j = ddot(a[j], s[j])
+                update = ((aTs_i / aTs_j) * ad[j] +
+                          (adTs_i / aTs_j) * a[j] -
+                          (aTs_i * adTs_j / (aTs_j * aTs_j)) * a[j])
+                Bs_i += update
+                ad[i] -= update
+            a[i] = y[i] + (ys[i] / ddot(s[i], Bs_i))**0.5 * Bs_i
 
-                # Form inner products with current s[] and input vector
-                aTs[k] = np.dot(a[:, k], s[:, k])
-                adTs[k] = np.dot(ad[:, k], s[:, k])
-                aTv = np.dot(a[:, k], v[:])
-                adTv = np.dot(ad[:, k], v[:])
-
-                q += (aTv / aTs[k]) * ad[:, k] + (adTv / aTs[k]) * a[:, k] - \
-                    (aTv * adTs[k] / aTs[k]**2) * a[:, k]
+            # Form inner products with current s and input vector
+            aTs[i] = ddot(a[i], s[i])
+            adTs[i] = ddot(ad[i], s[i])
+            aTv = ddot(a[i], v)
+            adTv = ddot(ad[i], v)
+            q += ((aTv / aTs[i]) * ad[i] +
+                  (adTv / aTs[i]) * a[i] -
+                  (aTv * adTs[i] / (aTs[i] * aTs[i])) * a[i])
 
         return q

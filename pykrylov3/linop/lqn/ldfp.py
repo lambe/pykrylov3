@@ -4,7 +4,7 @@
 Linear operators to represent limited-memory DFP matrices
 and their inverses.
 """
-from pykrylov3.linop import InverseLBFGSOperator, LBFGSOperator
+from pykrylov3.linop.lqn.lbfgs import InverseLBFGSOperator, LBFGSOperator
 
 __docformat__ = 'restructuredtext'
 
@@ -30,12 +30,12 @@ class LDFPOperator(InverseLBFGSOperator):
                          Nocedal; the scaling factor is sᵀy/yᵀy
                          (default: False).
         """
-        super(LDFPOperator, self).__init__(n, npairs, **kwargs)
+        super().__init__(n, npairs, **kwargs)
 
     def store(self, new_s, new_y):
         """Store the new pair {new_s, new_y}."""
         # Simply swap s and y.
-        super(LDFPOperator, self).store(new_y, new_s)
+        super().store(new_y, new_s)
 
 
 class InverseLDFPOperator(LBFGSOperator):
@@ -59,9 +59,9 @@ class InverseLDFPOperator(LBFGSOperator):
                          Nocedal; the scaling factor is sᵀy/yᵀy
                          (default: False).
         """
-        super(InverseLDFPOperator, self).__init__(n, npairs, **kwargs)
+        super().__init__(n, npairs, **kwargs)
 
     def store(self, new_s, new_y):
         """Store the new pair {new_s, new_y}."""
         # Simply swap s and y.
-        super(InverseLDFPOperator, self).store(new_y, new_s)
+        super().store(new_y, new_s)

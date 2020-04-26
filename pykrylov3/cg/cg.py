@@ -1,5 +1,5 @@
-
 import numpy as np
+from typing import Optional
 
 from pykrylov3.tools import check_symmetric
 from pykrylov3.generic import KrylovMethod
@@ -23,6 +23,9 @@ class CG(KrylovMethod):
 
     in the variable x.
 
+    (CG may also be used to solve "quasi-definite" systems of linear equations,
+    though the convergence properties change.)
+
     CG performs 1 operator-vector product, 2 dot products and 3 daxpys per
     iteration.
 
@@ -32,95 +35,81 @@ class CG(KrylovMethod):
     """
 
     def __init__(self, op, **kwargs):
-        KrylovMethod.__init__(self, op, **kwargs)
+        super().__init__(op, **kwargs)
 
         self.name = 'Conjugate Gradient'
         self.acronym = 'CG'
         self.prefix = self.acronym + ': '
-        self.resids = []
-        self.iterates = []
 
         # Direction of nonconvexity if A is not positive definite
-        self.infiniteDescent = None
+        self.isPositiveDefinite: bool = True
+        self.infiniteDescent: Optional[np.ndarray] = None
 
-    def solve(self, rhs, **kwargs):
+    def solve(self, rhs, x0=None, **kwargs):
         """
         Solve a linear system with `rhs` as right-hand side by the CG method.
         The vector `rhs` should be a Numpy array.
 
         :Keywords:
 
-           :guess:           Initial guess (Numpy array). Default: 0.
            :matvec_max:      Max. number of operator-vector produts. Default: 2n.
            :check_symmetric: Ensure operator is symmetric. Default: False.
            :check_curvature: Ensure operator is positive definite. Default: True.
-           :store_resids:    Store full residual vector history. Default: False.
-           :store_iterates:  Store full iterate history. Default: False.
 
         """
         n = rhs.shape[0]
-        nMatvec = 0
-        definite = True
+        assert self.op.shape[0] == n
+
+        self.nMatvec = 0
         check_sym = kwargs.get('check_symmetric', False)
         check_curvature = kwargs.get('check_curvature', True)
-        store_resids = kwargs.get('store_resids', False)
-        store_iterates = kwargs.get('store_iterates', False)
 
-        if check_sym:
-            if not check_symmetric(self.op):
-                self.logger.error('Coefficient operator is not symmetric')
-                return
+        if check_sym and not check_symmetric(self.op):
+            self._writeerror('Coefficient operator is not symmetric')
+            return
 
-        # Initial guess
+        # Check for an initial guess
         result_type = np.result_type(self.op.dtype, rhs.dtype)
-        guess_supplied = 'guess' in kwargs.keys()
-        x = kwargs.get('guess', np.zeros(n)).astype(result_type)
-
-        if store_iterates:
-            self.iterates.append(x.copy())
+        x = x0.copy() if x0 is not None else np.zeros(n, dtype=result_type)
+        self._store_iterate(x)
 
         matvec_max = kwargs.get('matvec_max', 2*n)
 
         # Initial residual vector
         r = -rhs
-        if guess_supplied:
+        if x0 is not None:
             r += self.op * x
-            nMatvec += 1
+            self.nMatvec += 1
 
         # Initial preconditioned residual vector
-        if self.precon is not None:
-            y = self.precon * r
-        else:
-            y = r
-
-        if store_resids:
-            self.resids.append(y.copy())
+        y = self.precon @ r
+        self._store_resid(y)
 
         ry = np.dot(r, y)
-        self.residNorm0 = residNorm = np.abs(np.sqrt(ry))
-        self.residHistory.append(self.residNorm0)
+        self.residNorm0 = self.residNorm = np.abs(ry**0.5)
+        self._store_resid_norm(self.residNorm0)
         threshold = max(self.abstol, self.reltol * self.residNorm0)
 
         p = -r   # Initial search direction (copy not to overwrite rhs if x=0)
 
         hdr_fmt = '%6s  %7s  %8s'
         hdr = hdr_fmt % ('Matvec', 'Resid', 'Curv')
-        self.logger.info(hdr)
-        self.logger.info('-' * len(hdr))
-        info = '%6d  %7.1e' % (nMatvec, residNorm)
-        self.logger.info(info)
+        self._write(hdr)
+        self._write('-' * len(hdr))
+        info = '%6d  %7.1e' % (self.nMatvec, self.residNorm)
+        self._write(info)
 
-        while residNorm > threshold and nMatvec < matvec_max and definite:
+        while self.residNorm > threshold and self.nMatvec < matvec_max:
             Ap = self.op * p
-            nMatvec += 1
+            self.nMatvec += 1
             pAp = np.dot(p, Ap)
 
             if check_curvature:
                 if np.imag(pAp) > 1.0e-8 * np.abs(pAp) or np.real(pAp) <= 0:
-                    self.logger.error('Coefficient operator is not positive definite')
+                    self._writeerror('Coefficient operator is not positive definite')
                     self.infiniteDescent = p
-                    definite = False
-                    continue
+                    self.isPositiveDefinite = False
+                    break
 
             # Compute step length
             alpha = ry/pAp
@@ -129,17 +118,11 @@ class CG(KrylovMethod):
             x += alpha * p
             r += alpha * Ap
 
-            if store_iterates:
-                self.iterates.append(x.copy())
+            self._store_iterate(x)
 
             # Compute preconditioned residual
-            if self.precon is not None:
-                y = self.precon * r
-            else:
-                y = r
-
-            if store_resids:
-                self.resids.append(y.copy())
+            y = self.precon @ r
+            self._store_resid(y)
 
             # Update preconditioned residual norm
             ry_next = np.dot(r, y)
@@ -150,14 +133,11 @@ class CG(KrylovMethod):
             p -= r
 
             ry = ry_next
-            residNorm = np.abs(np.sqrt(ry))
-            self.residHistory.append(residNorm)
+            self.residNorm = np.abs(ry**0.5)
+            self._store_resid_norm(self.residNorm)
 
-            info = '%6d  %7.1e  %8.1e' % (nMatvec, residNorm, np.real(pAp))
-            self.logger.info(info)
+            info = '%6d  %7.1e  %8.1e' % (self.nMatvec, self.residNorm, np.real(pAp))
+            self._write(info)
 
-        self.converged = residNorm <= threshold
-        self.definite = definite
-        self.nMatvec = nMatvec
-        self.bestSolution = self.x = x
-        self.residNorm = residNorm
+        self.converged = self.residNorm <= threshold
+        self.bestSolution = x

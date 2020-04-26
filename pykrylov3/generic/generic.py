@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import logging
 import numpy as np
 from scipy.sparse.linalg import LinearOperator
+from scipy.sparse.linalg.interface import IdentityOperator
 from typing import List, Optional
 
 __docformat__ = 'restructuredtext'
@@ -36,7 +37,7 @@ class KrylovMethod(ABC):
                   returns the vector `y` solution of the linear system
                   `M y = x`.
 
-        :logger:  a `logging.logger` instance. If none is supplied, a default
+        :logger:  a `logging.Logger` instance. If none is supplied, a default
                   null logger will be used.
 
 
@@ -77,25 +78,47 @@ class KrylovMethod(ABC):
         # Optional keyword arguments
         self.abstol: float = kwargs.get('abstol', 1.0e-8)
         self.reltol: float = kwargs.get('reltol', 1.0e-6)
-        self.precon: Optional[LinearOperator] = kwargs.get('precon', None)
+        self.precon: LinearOperator = kwargs.get('precon', IdentityOperator(op.shape, op.dtype))
         self.logger: logging.Logger = kwargs.get('logger', null_log)
 
         self.residNorm: Optional[np.float] = None
         self.residNorm0: Optional[np.float] = None
+
+        self.storeResids: bool = kwargs.get('storeResids', False)
         self.residHistory: List[np.ndarray] = []
+        self.storeResidNorms: bool = kwargs.get('storeResidNorms', False)
+        self.residNormHistory: List[np.float] = []
+        self.storeIterates: bool = kwargs.get('storeIterates', False)
+        self.iterateHistory: List[np.ndarray] = []
 
         self.nMatvec: int = 0
         self.nIter: int = 0
         self.converged: bool = False
         self.bestSolution: Optional[np.ndarray] = None
-        self.x: Optional[np.ndarray] = self.bestSolution
 
     def _write(self, msg: str):
-        # If levels other than info are needed they should be used explicitly.
         self.logger.info(msg)
 
+    def _writewarning(self, msg: str):
+        self.logger.warning(msg)
+
+    def _writeerror(self, msg: str):
+        self.logger.error(msg)
+
+    def _store_iterate(self, iterate: np.ndarray):
+        if self.storeIterates:
+            self.iterateHistory.append(iterate.copy())
+
+    def _store_resid(self, resid: np.ndarray):
+        if self.storeResids:
+            self.residHistory.append(resid.copy())
+
+    def _store_resid_norm(self, resid_norm: np.float):
+        if self.storeResidNorms:
+            self.residNormHistory.append(resid_norm)
+
     @abstractmethod
-    def solve(self, rhs: np.ndarray, **kwargs):
+    def solve(self, rhs: np.ndarray, x0: Optional[np.ndarray] = None, **kwargs):
         """
         This is the :meth:`solve` method of the abstract `KrylovMethod` class.
         The class must be specialized and this method overridden.

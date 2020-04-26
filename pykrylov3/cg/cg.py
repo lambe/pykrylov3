@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.linalg.blas import ddot, daxpy
 from typing import Optional
 
 from pykrylov3.tools import check_symmetric
@@ -85,8 +86,8 @@ class CG(KrylovMethod):
         y = self.precon @ r
         self._store_resid(y)
 
-        ry = np.dot(r, y)
-        self.residNorm0 = self.residNorm = np.abs(ry**0.5)
+        ry = ddot(r, y)
+        self.residNorm0 = self.residNorm = ry**0.5
         self._store_resid_norm(self.residNorm0)
         threshold = max(self.abstol, self.reltol * self.residNorm0)
 
@@ -102,10 +103,10 @@ class CG(KrylovMethod):
         while self.residNorm > threshold and self.nMatvec < matvec_max:
             Ap = self.op * p
             self.nMatvec += 1
-            pAp = np.dot(p, Ap)
+            pAp = ddot(p, Ap)
 
             if check_curvature:
-                if np.imag(pAp) > 1.0e-8 * np.abs(pAp) or np.real(pAp) <= 0:
+                if pAp <= 0:
                     self._writeerror('Coefficient operator is not positive definite')
                     self.infiniteDescent = p
                     self.isPositiveDefinite = False
@@ -115,8 +116,8 @@ class CG(KrylovMethod):
             alpha = ry/pAp
 
             # Update estimate and residual
-            x += alpha * p
-            r += alpha * Ap
+            x = daxpy(x, alpha * p)
+            r = daxpy(r, alpha * Ap)
 
             self._store_iterate(x)
 
@@ -125,18 +126,17 @@ class CG(KrylovMethod):
             self._store_resid(y)
 
             # Update preconditioned residual norm
-            ry_next = np.dot(r, y)
+            ry_next = ddot(r, y)
 
             # Update search direction
             beta = ry_next/ry
-            p *= beta
-            p -= r
+            p = daxpy(p, -r, a=beta)
 
             ry = ry_next
-            self.residNorm = np.abs(ry**0.5)
+            self.residNorm = ry**0.5
             self._store_resid_norm(self.residNorm)
 
-            info = '%6d  %7.1e  %8.1e' % (self.nMatvec, self.residNorm, np.real(pAp))
+            info = '%6d  %7.1e  %8.1e' % (self.nMatvec, self.residNorm, pAp)
             self._write(info)
 
         self.converged = self.residNorm <= threshold

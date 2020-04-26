@@ -113,9 +113,9 @@ class KrylovMethod(ABC):
         if self.storeResids:
             self.residHistory.append(resid.copy())
 
-    def _store_resid_norm(self, resid_norm: np.float):
+    def _store_resid_norm(self):
         if self.storeResidNorms:
-            self.residNormHistory.append(resid_norm)
+            self.residNormHistory.append(self.residNorm)
 
     @abstractmethod
     def solve(self, rhs: np.ndarray, x0: Optional[np.ndarray] = None, **kwargs):

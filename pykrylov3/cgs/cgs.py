@@ -1,11 +1,12 @@
+import numpy as np
+from scipy.linalg.blas import ddot, daxpy
+
+from pykrylov3.generic import KrylovMethod
 
 __docformat__ = 'restructuredtext'
 
-import numpy as np
 
-from pykrylov.generic import KrylovMethod
-
-class CGS( KrylovMethod ):
+class CGS(KrylovMethod):
     """
     A pure Python implementation of the conjugate gradient squared (CGS)
     algorithm. CGS may be used to solve unsymmetric systems of linear equations,
@@ -15,7 +16,7 @@ class CGS( KrylovMethod ):
 
     where the operator A may be unsymmetric.
 
-    CGS requires 2 operator-vector products with A, 3 dot products and 7 daxpys
+    CGS requires 2 operator-vector products with A, 2 dot products and 6 daxpys
     per iteration. It does not require products with the adjoint of A.
 
     If a preconditioner is supplied, CGS needs to solve two preconditioning
@@ -37,87 +38,77 @@ class CGS( KrylovMethod ):
         self.acronym = 'CGS'
         self.prefix = self.acronym + ': '
 
-    def solve(self, rhs, **kwargs):
+    def solve(self, rhs, x0=None, **kwargs):
         """
         Solve a linear system with `rhs` as right-hand side by the CGS method.
         The vector `rhs` should be a Numpy array.
 
         :keywords:
-            :guess:      Initial guess (Numpy array, default: 0)
             :matvec_max: Max. number of matrix-vector produts (2n)
         """
         n = rhs.shape[0]
-        nMatvec = 0
+        assert self.op.shape[0] == n
+        self.nMatvec = 0
 
         # Initial guess is zero unless one is supplied
         result_type = np.result_type(self.op.dtype, rhs.dtype)
-        guess_supplied = 'guess' in kwargs.keys()
-        x = kwargs.get('guess', np.zeros(n)).astype(result_type)
+        x = x0.copy() if x0 is not None else np.zeros(n, dtype=result_type)
+        self._store_iterate(x)
+
         matvec_max = kwargs.get('matvec_max', 2*n)
 
         r0 = rhs  # Fixed vector throughout
-        if guess_supplied:
-            r0 = rhs - self.op * x
+        if x0 is not None:
+            r0 -= self.op * x
+        self._store_resid(r0)
 
-        rho = np.dot(r0,r0)
-        residNorm = np.abs(np.sqrt(rho))
-        self.residNorm0 = residNorm
-        threshold = max( self.abstol, self.reltol * self.residNorm0 )
-        self.logger.info('Initial residual = %8.2e\n' % self.residNorm0)
-        self.logger.info('Threshold = %8.2e\n' % threshold)
+        rho = ddot(r0, r0)
+        self.residNorm0 = self.residNorm = rho**0.5
+        self._store_resid_norm()
+        threshold = max(self.abstol, self.reltol * self.residNorm0)
 
-        finished = (residNorm <= threshold or nMatvec >= matvec_max)
+        self._write('Initial residual = %8.2e\n' % self.residNorm0)
+        self._write('Threshold = %8.2e\n' % threshold)
 
-        if not finished:
-            r = r0.copy()   # Initial residual vector
-            u = r0
-            p = r0.copy()
+        finished = (self.residNorm <= threshold or self.nMatvec >= matvec_max)
+
+        r = r0.copy()   # Initial residual vector
+        u = r0.copy()
+        p = r0.copy()
 
         while not finished:
+            y = self.precon @ p
+            v = self.op @ y
+            self.nMatvec += 1
 
-            if self.precon is not None:
-                y = self.precon * p
-            else:
-                y = p
-
-            v = self.op * y ; nMatvec += 1
-            sigma = np.dot(r0,v)
+            sigma = ddot(r0, v)
             alpha = rho/sigma
-            q = u - alpha * v
-
-            if self.precon is not None:
-                z = self.precon * (u+q)
-            else:
-                z = u+q
+            q = daxpy(v, u, a=-alpha)
+            z = self.precon @ (u + q)
 
             # Update solution and residual
-            x += alpha * z
-            Az = self.op * z ; nMatvec += 1
-            r -= alpha * Az
+            x = daxpy(z, x, a=alpha)
+            self._store_iterate(x)
+            Az = self.op @ z
+            self.nMatvec += 1
+            r = daxpy(Az, r, a=-alpha)
+            self._store_resid(r)
 
             # Update residual norm and check convergence
-            residNorm = np.linalg.norm(r)
+            self.residNorm = np.linalg.norm(r)
+            self._store_resid_norm()
+            finished = (self.residNorm <= threshold or self.nMatvec >= matvec_max)
 
-            if residNorm <= threshold or nMatvec >= matvec_max:
-                finished = True
-                continue
-
-            rho_next = np.dot(r0,r)
+            rho_next = ddot(r0, r)
             beta = rho_next/rho
             rho = rho_next
-            u = r + beta * q
+            u = daxpy(q, r, a=beta)
 
-            # Update p in-place
-            p *= beta
-            p += q
-            p *= beta
-            p += u
+            p = daxpy(p, q, a=beta)
+            p = daxpy(p, u, a=beta)
 
             # Display current info if requested
-            self.logger.info('%5d  %8.2e\n' % (nMatvec, residNorm))
+            self._write('%5d  %8.2e\n' % (self.nMatvec, self.residNorm))
 
-
-        self.converged = residNorm <= threshold
-        self.nMatvec = nMatvec
-        self.bestSolution = self.x = x
-        self.residNorm = residNorm
+        self.converged = self.residNorm <= threshold
+        self.bestSolution = x

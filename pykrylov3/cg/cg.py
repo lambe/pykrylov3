@@ -79,7 +79,7 @@ class CG(KrylovMethod):
         # Initial residual vector
         r = -rhs
         if x0 is not None:
-            r += self.op * x
+            r += self.op @ x
             self.nMatvec += 1
 
         # Initial preconditioned residual vector
@@ -88,7 +88,7 @@ class CG(KrylovMethod):
 
         ry = ddot(r, y)
         self.residNorm0 = self.residNorm = ry**0.5
-        self._store_resid_norm(self.residNorm0)
+        self._store_resid_norm()
         threshold = max(self.abstol, self.reltol * self.residNorm0)
 
         p = -r   # Initial search direction (copy not to overwrite rhs if x=0)
@@ -100,7 +100,8 @@ class CG(KrylovMethod):
         info = '%6d  %7.1e' % (self.nMatvec, self.residNorm)
         self._write(info)
 
-        while self.residNorm > threshold and self.nMatvec < matvec_max:
+        finished = (self.residNorm <= threshold or self.nMatvec >= matvec_max)
+        while not finished:
             Ap = self.op * p
             self.nMatvec += 1
             pAp = ddot(p, Ap)
@@ -116,8 +117,8 @@ class CG(KrylovMethod):
             alpha = ry/pAp
 
             # Update estimate and residual
-            x = daxpy(x, alpha * p)
-            r = daxpy(r, alpha * Ap)
+            x = daxpy(p, x, a=alpha)
+            r = daxpy(Ap, r, a=alpha)
 
             self._store_iterate(x)
 
@@ -134,7 +135,8 @@ class CG(KrylovMethod):
 
             ry = ry_next
             self.residNorm = ry**0.5
-            self._store_resid_norm(self.residNorm)
+            self._store_resid_norm()
+            finished = (self.residNorm <= threshold or self.nMatvec >= matvec_max)
 
             info = '%6d  %7.1e  %8.1e' % (self.nMatvec, self.residNorm, pAp)
             self._write(info)

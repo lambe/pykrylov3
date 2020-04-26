@@ -1,4 +1,8 @@
+from abc import ABC, abstractmethod
 import logging
+import numpy as np
+from scipy.sparse.linalg import LinearOperator
+from typing import List, Optional
 
 __docformat__ = 'restructuredtext'
 
@@ -8,7 +12,7 @@ null_log.setLevel(logging.INFO)
 null_log.addHandler(logging.NullHandler())
 
 
-class KrylovMethod(object):
+class KrylovMethod(ABC):
     """
     A general template for implementing iterative Krylov methods. This module
     defines the `KrylovMethod` generic class. Other modules subclass
@@ -62,35 +66,36 @@ class KrylovMethod(object):
                    Philadelphia, 1993.
     """
 
-    def __init__(self, op, **kwargs):
+    def __init__(self, op: LinearOperator, **kwargs):
 
-        self.prefix = 'Generic: '
-        self.name   = 'Generic Krylov Method (must be subclassed)'
+        self.prefix: str = 'Generic: '
+        self.name: str = 'Generic Krylov Method (must be subclassed)'
 
         # Mandatory arguments
-        self.op = op
+        self.op: LinearOperator = op
 
         # Optional keyword arguments
-        self.abstol = kwargs.get('abstol', 1.0e-8)
-        self.reltol = kwargs.get('reltol', 1.0e-6)
-        self.precon = kwargs.get('precon', None)
-        self.logger = kwargs.get('logger', null_log)
+        self.abstol: float = kwargs.get('abstol', 1.0e-8)
+        self.reltol: float = kwargs.get('reltol', 1.0e-6)
+        self.precon: Optional[LinearOperator] = kwargs.get('precon', None)
+        self.logger: logging.Logger = kwargs.get('logger', null_log)
 
-        self.residNorm  = None
-        self.residNorm0 = None
-        self.residHistory = []
+        self.residNorm: Optional[np.float] = None
+        self.residNorm0: Optional[np.float] = None
+        self.residHistory: List[np.ndarray] = []
 
-        self.nMatvec = 0
-        self.nIter = 0
-        self.converged = False
-        self.bestSolution = None
-        self.x = self.bestSolution
+        self.nMatvec: int = 0
+        self.nIter: int = 0
+        self.converged: bool = False
+        self.bestSolution: Optional[np.ndarray] = None
+        self.x: Optional[np.ndarray] = self.bestSolution
 
-    def _write(self, msg):
+    def _write(self, msg: str):
         # If levels other than info are needed they should be used explicitly.
         self.logger.info(msg)
 
-    def solve(self, rhs, **kwargs):
+    @abstractmethod
+    def solve(self, rhs: np.ndarray, **kwargs):
         """
         This is the :meth:`solve` method of the abstract `KrylovMethod` class.
         The class must be specialized and this method overridden.

@@ -16,7 +16,7 @@ class CGS(KrylovMethod):
 
     where the operator A may be unsymmetric.
 
-    CGS requires 2 operator-vector products with A, 2 dot products and 6 daxpys
+    CGS requires 2 operator-vector products with A, 3 dot products and 6 daxpys
     per iteration. It does not require products with the adjoint of A.
 
     If a preconditioner is supplied, CGS needs to solve two preconditioning
@@ -59,7 +59,8 @@ class CGS(KrylovMethod):
 
         r0 = rhs  # Fixed vector throughout
         if x0 is not None:
-            r0 -= self.op * x
+            r0 -= self.op @ x
+            self.nMatvec += 1
         self._store_resid(r0)
 
         rho = ddot(r0, r0)

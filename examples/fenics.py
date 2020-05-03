@@ -11,10 +11,11 @@ import numpy as np
 
 # Import a Krylov subspace solver.
 # from pykrylov.cg import CG as KSolver
-from pykrylov.bicgstab import BiCGSTAB as KSolver
+from pykrylov3.bicgstab import BiCGSTAB as KSolver
 # from pykrylov.tfqmr import TFQMR as KSolver
 # from pykrylov.cgs import CGS as KSolver
-from pykrylov.linop import LinearOperator, DiagonalOperator
+# from pykrylov.linop import LinearOperator, DiagonalOperator
+from scipy.sparse.linalg import LinearOperator
 
 
 class LeftRightBoundary(SubDomain):
@@ -70,12 +71,12 @@ if __name__ == '__main__':
     ksolver = KSolver(Aop, precon=D)
     ksolver.solve(b.array())
 
-    print 'Using ' + ksolver.name
-    print 'System size: ', Aop.shape[0]
-    print 'Converged: ', ksolver.converged
-    print 'Initial/Final Residual:  %7.1e/%7.1e' \
-        % (ksolver.residNorm0, ksolver.residNorm)
-    print 'Matvecs:   ', ksolver.nMatvec
+    print('Using ' + ksolver.name)
+    print('System size: ', Aop.shape[0])
+    print('Converged: ', ksolver.converged)
+    print('Initial/Final Residual:  %7.1e/%7.1e' \
+        % (ksolver.residNorm0, ksolver.residNorm))
+    print('Matvecs:   ', ksolver.nMatvec)
 
     # Plot solution
     u = Function(V)

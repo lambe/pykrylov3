@@ -1,9 +1,8 @@
 # Demo for MINRES.
-# Requires Pysparse (http://pysparse.sf.net)
 # The test matrix may be obtained from http://math.nist.gov/MatrixMarket
 
-from pykrylov.minres import Minres
-from demo_common import demo
+from pykrylov3.minres import Minres
+from .demo_common import demo
 import logging
 import sys
 
